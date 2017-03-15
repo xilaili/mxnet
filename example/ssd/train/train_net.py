@@ -8,6 +8,7 @@ from initializer import ScaleInitializer
 from metric import MultiBoxMetric
 from dataset.iterator import DetIter
 from dataset.pascal_voc import PascalVoc
+from dataset.ucar import Ucar
 from dataset.concat_db import ConcatDB
 from config.config import cfg
 
@@ -45,6 +46,17 @@ def load_pascal(image_set, year, devkit_path, shuffle=False):
     imdbs = []
     for s, y in zip(image_set, year):
         imdbs.append(PascalVoc(s, y, devkit_path, shuffle, is_train=True))
+    if len(imdbs) > 1:
+        return ConcatDB(imdbs, shuffle)
+    else:
+        return imdbs[0]
+
+def load_ucar(image_set, devkit_path, shuffle=False):          # Xilai: added load_ucar method
+    image_set = [y.strip() for y in image_set.split(',')]
+    assert image_set, "No image_set specified"
+    imdbs = []
+    for s in image_set:
+        imdbs.append(Ucar(s, devkit_path, shuffle, is_train=True))
     if len(imdbs) > 1:
         return ConcatDB(imdbs, shuffle)
     else:
@@ -169,6 +181,9 @@ def train_net(net, dataset, image_set, year, devkit_path, batch_size,
             val_imdb = load_pascal(val_set, val_year, devkit_path, False)
         else:
             val_imdb = None
+    elif dataset == 'ucar':                       # Xilai: added ucar dataset loading
+        imdb = load_ucar(image_set, devkit_path, cfg.TRAIN.INIT_SHUFFLE)
+        val_imdb = None
     else:
         raise NotImplementedError("Dataset " + dataset + " not supported")
 
@@ -208,9 +223,11 @@ def train_net(net, dataset, image_set, year, devkit_path, batch_size,
         _, args, auxs = mx.model.load_checkpoint(prefix, resume)
         begin_epoch = resume
     elif finetune > 0:
+        print(prefix)
         logger.info("Start finetuning with {} from epoch {}"
             .format(ctx_str, finetune))
-        _, args, auxs = mx.model.load_checkpoint(prefix, finetune)
+        #_, args, auxs = mx.model.load_checkpoint(pretrained, finetune)    #xilai
+        _, args, auxs = mx.model.load_checkpoint(prefix, finetune)    #xilai
         begin_epoch = finetune
         # the prediction convolution layers name starts with relu, so it's fine
         fixed_param_names = [name for name in net.list_arguments() \
