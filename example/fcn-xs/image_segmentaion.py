@@ -1,7 +1,7 @@
 # pylint: skip-file
 import numpy as np
-import mxnet as mx
 from PIL import Image
+import mxnet as mx
 
 def getpallete(num_cls):
     # this function is to get the colormap for visualizing the segmentation mask
@@ -22,9 +22,9 @@ def getpallete(num_cls):
     return pallete
 
 pallete = getpallete(256)
-img = "./person_bicycle.jpg"
+img = "./data/street.jpg"
 seg = img.replace("jpg", "png")
-model_previx = "FCN8s_VGG16"
+model_previx = "model/FCN8s_VGG16"
 epoch = 19
 ctx = mx.gpu(0)
 

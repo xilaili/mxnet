@@ -37,6 +37,9 @@ def get_detector(net, prefix, epoch, data_shape, mean_pixels, ctx,
     sys.path.append(os.path.join(os.getcwd(), 'symbol'))
     net = importlib.import_module("symbol_" + net) \
         .get_symbol(len(CLASSES), nms_thresh, force_nms)
+    # visualize the network
+    a = mx.viz.plot_network(net, shape = {'data': (1,3,300,300)})
+    a.view('ssd')
     detector = Detector(net, prefix + "_" + str(data_shape), epoch, \
         data_shape, mean_pixels, ctx=ctx)
     return detector
