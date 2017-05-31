@@ -9,6 +9,7 @@ from metric import MultiBoxMetric
 from dataset.iterator import DetIter
 from dataset.pascal_voc import PascalVoc
 from dataset.ucar import Ucar
+from dataset.cfl import CFL
 from dataset.concat_db import ConcatDB
 from config.config import cfg
 
@@ -61,6 +62,19 @@ def load_ucar(image_set, devkit_path, shuffle=False):          # Xilai: added lo
         return ConcatDB(imdbs, shuffle)
     else:
         return imdbs[0]
+
+def load_cfl(image_set, devkit_path, shuffle=False):          # Xilai: added load_cfl method
+    image_set = [y.strip() for y in image_set.split(',')]
+    assert image_set, "No image_set specified"
+    imdbs = []
+    for s in image_set:
+        imdbs.append(CFL(s, devkit_path, shuffle, is_train=True))
+    if len(imdbs) > 1:
+        return ConcatDB(imdbs, shuffle)
+    else:
+        return imdbs[0]
+
+
 
 def convert_pretrained(name, args):
     """
@@ -184,6 +198,10 @@ def train_net(net, dataset, image_set, year, devkit_path, batch_size,
     elif dataset == 'ucar':                       # Xilai: added ucar dataset loading
         imdb = load_ucar(image_set, devkit_path, cfg.TRAIN.INIT_SHUFFLE)
         val_imdb = None
+    elif dataset == 'cfl':                       # Xilai: added ucar dataset loading
+        imdb = load_cfl(image_set, devkit_path, cfg.TRAIN.INIT_SHUFFLE)
+        val_imdb = None
+
     else:
         raise NotImplementedError("Dataset " + dataset + " not supported")
 

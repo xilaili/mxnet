@@ -1,7 +1,6 @@
 """
 Proposal Target Operator selects foreground and background roi and assigns label, bbox_transform to them.
 """
-
 import mxnet as mx
 import numpy as np
 from distutils.util import strtobool

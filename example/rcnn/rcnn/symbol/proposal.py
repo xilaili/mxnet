@@ -2,7 +2,6 @@
 Proposal Operator transform anchor coordinates into ROI coordinates with prediction results on
 classification probability and bounding box prediction results, and image size and scale information.
 """
-
 import mxnet as mx
 import numpy as np
 import numpy.random as npr

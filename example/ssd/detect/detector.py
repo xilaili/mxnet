@@ -4,6 +4,12 @@ import numpy as np
 from timeit import default_timer as timer
 from dataset.testdb import TestDB
 from dataset.iterator import DetIter
+from collections import namedtuple
+Batch = namedtuple('Batch', ['data'])
+import cv2
+from tools.image_processing import resize, transform
+from tools.rand_sampler import RandSampler
+import random
 
 class Detector(object):
     """
@@ -38,6 +44,7 @@ class Detector(object):
         self.mod.set_params(args, auxs)
         self.data_shape = data_shape
         self.mean_pixels = mean_pixels
+        self.colors = dict()
 
     def detect(self, det_iter, show_timer=False):
         """
@@ -160,7 +167,6 @@ class Detector(object):
         ----------
 
         """
-        import cv2
         dets = self.im_detect(im_list, root_dir, extension, show_timer=show_timer)
         if not isinstance(im_list, list):
             im_list = [im_list]
@@ -169,3 +175,36 @@ class Detector(object):
             img = cv2.imread(im_list[k])
             img[:, :, (0, 1, 2)] = img[:, :, (2, 1, 0)]
             self.visualize_detection(img, det, classes, thresh)
+    
+    def demo(self, img, classes=[], thresh=0.6, show_timer=False):
+        data = resize(img, (self.data_shape, self.data_shape), cv2.INTER_LINEAR)
+        data = transform(data, self.mean_pixels)
+        data = data[np.newaxis, :]
+        self.mod.forward(Batch([mx.nd.array(data)]))
+        detection = self.mod.get_outputs()[0].asnumpy()
+        det = detection[0, :, :]
+        dets = det[np.where(det[:, 0] >= 0)[0]]
+        #img[:, :, (0, 1, 2)] = img[:, :, (2, 1, 0)]
+        # visualize det on img, to do 
+        height, width = img.shape[0], img.shape[1]
+        #colors = dict()
+        for i in range(dets.shape[0]):
+            cls_id = int(dets[i, 0])
+            if cls_id >= 0:
+                score = dets[i, 1]
+                if score > thresh:
+                    if cls_id not in self.colors:
+                        self.colors[cls_id] = (256*random.random(), 256*random.random(), 256*random.random())
+                    xmin = int(dets[i, 2] * width)
+                    ymin = int(dets[i, 3] * height)
+                    xmax = int(dets[i, 4] * width)
+                    ymax = int(dets[i, 5] * height)
+                    # plot rectangle
+                    cv2.rectangle(img, (xmin, ymin), (xmax, ymax), self.colors[cls_id], 4)
+                    class_name = str(cls_id)
+                    if classes and len(classes) > cls_id:
+                        class_name = classes[cls_id]
+                    # add class name and score
+                    cv2.putText(img,'{:s} {:.3f}'.format(class_name, score), (xmin, ymin-4), cv2.FONT_HERSHEY_SIMPLEX, 1, self.colors[cls_id], 4)
+
+        return img 
